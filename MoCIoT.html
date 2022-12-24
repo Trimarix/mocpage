@@ -8,50 +8,28 @@
     <div class="status"></div>
 
     <div>
-        <div><span>gyr X: </span><span class="gyro-x"></span></div>
-        <div><span>gyr Y: </span><span class="gyro-y"></span></div>
-        <div><span>gyr Z: </span><span class="gyro-z"></span></div>
-        <div></div>
-        <div><span>acc X: </span><span class="acc-x"></span></div>
-        <div><span>acc Y: </span><span class="acc-y"></span></div>
-        <div><span>acc Z: </span><span class="acc-z"></span></div>
+        <div><span>alpha: </span><span class="alpha"></span></div>
+        <div><span>beta: </span><span class="beta"></span></div>
+        <div><span>gamma: </span><span class="gamma"></span></div>
     </div>
 
 
 <script src="jquery-3.6.3.min.js"></script>
 
 <script>
-    function startGyro() {
-        stat.html("works :O")
-        let gyroscope = new Gyroscope({frequency: 10});
-
-        gyroscope.addEventListener('reading', (e) => {
-            $(".gyro-x").html(gyroscope.x)
-            $(".gyro-y").html(gyroscope.y)
-            $(".gyro-z").html(gyroscope.z)
-        });
-        const acl = new Accelerometer({frequency: 10});
-        acl.addEventListener("reading", () => {
-            $(".acc-x").html(acl.x)
-            $(".acc-y").html(acl.y)
-            $(".acc-z").html(acl.z)
-        });
-        gyroscope.start();
-        acl.start();
-    }
-
     let stat = $(".status");
-    stat.html("requesting permission")
+    
+    window.addEventListener('deviceorientation', handleOrientation);
 
-    navigator.permissions.query({name:'gyroscope'}).then(function(result) {
-        if (result.state == 'granted') {
-            startGyro();
-        } else if (result.state == 'prompt') {
-            stat.html("prompt")
-        } else if (result.state == 'denied') {
-            stat.html("denied")
-        }
-    });
+    function handleOrientation(event) {
+        const alpha = event.alpha;
+        const beta = event.beta;
+        const gamma = event.gamma;
+        
+        $("alpha").html(alpha)
+        $("beta").html(beta)
+        $("gamma").html(gamma)
+    }
 </script>
 
 </body>
