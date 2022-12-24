@@ -18,8 +18,6 @@
 
 <script>
     let stat = $(".status");
-    
-    window.addEventListener('deviceorientation', handleOrientation);
 
     function handleOrientation(event) {
         const alpha = event.alpha;
@@ -29,7 +27,9 @@
         $("alpha").html(alpha)
         $("beta").html(beta)
         $("gamma").html(gamma)
-    }
+    };
+    
+    window.addEventListener('deviceorientation', handleOrientation);
 </script>
 
 </body>
