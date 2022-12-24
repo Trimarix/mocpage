@@ -8,9 +8,13 @@
     <div class="status"></div>
 
     <div>
-        <div><span>X: </span><span class="gyro-x"></span></div>
-        <div><span>Y: </span><span class="gyro-y"></span></div>
-        <div><span>Z: </span><span class="gyro-z"></span></div>
+        <div><span>gyr X: </span><span class="gyro-x"></span></div>
+        <div><span>gyr Y: </span><span class="gyro-y"></span></div>
+        <div><span>gyr Z: </span><span class="gyro-z"></span></div>
+        <div></div>
+        <div><span>acc X: </span><span class="acc-x"></span></div>
+        <div><span>acc Y: </span><span class="acc-y"></span></div>
+        <div><span>acc Z: </span><span class="acc-z"></span></div>
     </div>
 
 
@@ -19,23 +23,21 @@
 <script>
     function startGyro() {
         stat.html("works :O")
-        let gyroscope = new Gyroscope({frequency: 60});
+        let gyroscope = new Gyroscope({frequency: 10});
 
         gyroscope.addEventListener('reading', (e) => {
-            $(".gyro-x").html("oeihwfwef")
             $(".gyro-x").html(gyroscope.x)
             $(".gyro-y").html(gyroscope.y)
             $(".gyro-z").html(gyroscope.z)
         });
-        gyroscope.onerror = (event) => {
-            // Handle runtime errors.
-            if (event.error.name === 'NotAllowedError') {
-                stat.html('Permission to access sensor was denied.');
-            } else if (event.error.name === 'NotReadableError') {
-                stat.html('Cannot connect to the sensor.');
-            }
-        };
+        const acl = new Accelerometer({frequency: 10});
+        acl.addEventListener("reading", () => {
+            $(".acc-x").html(acl.x)
+            $(".acc-y").html(acl.y)
+            $(".acc-z").html(acl.z)
+        });
         gyroscope.start();
+        acl.start();
     }
 
     let stat = $(".status");
