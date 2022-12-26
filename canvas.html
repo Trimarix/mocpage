@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="400" height="400" onmousedown="canvasEvent(true);" onmouseup="canvasEvent(false);" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML canvas tag.</canvas>
+
+<button onClick="game.shots = [];">clear shots</button>
+<button onClick="startGame();">start</button>
+<button onClick="endGame();">end</button>
+
+<script>
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+
+fieldInfo = {
+  width: c.width,
+  height: c.height,
+  radius: 25,
+  shotRadius: 20,
+}
+
+game = {
+  state: 10,
+  shots: [],
+}
+
+/* GAME STATES
+   10: Menu,
+   20: In Game,
+   30: Results  */
+
+function clear() {
+  ctx.clearRect(0, 0, fieldInfo.width, fieldInfo.height);
+}
+
+let gb = 0; // gyro beta
+let gg = 0; // gyro gamma
+
+let gbd = 1; // gyro beta delta
+function simulateGyroBeta() {
+  if (gb <= 0) {
+    gbd = 1;
+  } else if (gb >= 100) {
+    gbd = -1;
+  }
+  gb += gbd;
+}
+
+let ggd = 1; // gyro gamma delta
+function simulateGyroGamma() {
+  if (gg <= 0) {
+    ggd = 1;
+  } else if (gg >= 100) {
+    ggd = -1;
+  }
+  gg += ggd;
+}
+
+function handleOrientation(event) {
+  const alpha = event.alpha;
+  const beta = event.beta;
+  const gamma = event.gamma;
+
+  beta = beta < -30 ? -30 : beta;
+  beta = beta > 30 ? 30 : beta;
+  gamma = gamma < -30 ? -30 : gamma;
+  gamma = gamma > 30 ? 30 : gamma;
+
+  gb = (beta + 30)/60*100;
+  gg = (gamma + 30)/60*100;
+};
+
+window.addEventListener('deviceorientation', handleOrientation);
+
+function canvasEvent(state) {
+  shooting = state;
+}
+
+var shooting = false;
+function shoot() {
+  if (!shooting) return;
+  game.shots.push({
+    x: (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+    y: (fieldInfo.height - 2*fieldInfo.radius)*gg/100,
+  })
+}
+
+var simulateGyroBeta_int;
+var simulateGyroGamma_int;
+var shoot_int;
+function startGame() {
+  game.state = 20;
+  //simulateGyroBeta_int = setInterval(simulateGyroBeta, 50);
+  //simulateGyroGamma_int = setInterval(simulateGyroGamma, 50);
+  shoot_int = setInterval(shoot, 100);
+}
+
+function endGame() {
+  clearInterval(simulateGyroBeta_int);
+  clearInterval(simulateGyroGamma_int);
+  clearInterval(shoot_int);
+
+  game.state = 30;
+
+  finalDrawing = contextImageToBoolArr(ctx);
+}
+
+function defineCircle(center, radius) {
+  ctx.beginPath();
+  ctx.arc(radius + center.x, radius + center.y, radius, 0, 2 * Math.PI);
+}
+
+function drawCircle(center, radius) {
+  defineCircle(center, radius);
+  ctx.stroke();
+}
+
+function drawFilledCircle(center, radius) {
+  defineCircle(center, radius);
+  ctx.fill();
+}
+
+function drawLine(start, end) {
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(end.x, end.y);
+  ctx.stroke();
+}
+
+
+function contextImageToBoolArr(context) {
+  let data = context.getImageData(0, 0, fieldInfo.width, fieldInfo.height).data;
+  let arr = [];
+  let currentLine = [];
+  for (var i = 0; i < data.length; i += 4) {
+    let isFilled = data[i] === 0 && data[i+1] === 0 && data[i+2] === 0 && data[i+3] === 255;
+    currentLine.push(isFilled);
+    if (currentLine.length === fieldInfo.width) {
+      arr.push(currentLine);
+      currentLine = [];
+    }
+  }
+  return arr;
+}
+
+function drawModelContext(context) {
+  // rect at top
+  // context.fillRect(0, 0, fieldInfo.width, 2 * fieldInfo.shotRadius);
+
+
+  // smiley
+  /*
+  context.beginPath();
+  context.arc(100, 100, 30, 0, 2*Math.PI);
+  context.fill();
+
+  context.beginPath();
+  context.arc(300, 100, 30, 0, 2*Math.PI);
+
+  context.moveTo(80, 320);
+  context.quadraticCurveTo(200, 200, 320, 320);
+  context.quadraticCurveTo(200, 360, 80, 320);
+  context.fill();
+  */
+
+
+  // circle
+  context.beginPath();
+  context.arc(200, 200, 160, 0, 2*Math.PI);
+  context.fill();
+
+  let fs = context.fillStyle;
+  context.fillStyle = "white"
+  context.beginPath();
+  context.arc(200, 200, 90, 0, 2*Math.PI);
+  context.fill();
+  context.fillStyle = fs;
+}
+
+let modelOpacity = 255;
+function drawModel() {
+  let fs = ctx.fillStyle;
+  let opacHex = modelOpacity.toString(16);
+  if (opacHex.length < 2) opacHex = "0" + opacHex;
+  ctx.fillStyle = "#0000ff" + opacHex;
+
+  drawModelContext(ctx);
+
+  ctx.fillStyle = fs;
+  modelOpacity = modelOpacity <= 0 ? 0 : modelOpacity -5;
+}
+
+var modelDrawing = [];
+{
+  var virtCanvas = document.createElement('canvas');
+  var virtCtx = virtCanvas.getContext('2d');
+  virtCanvas.width = fieldInfo.width;
+  virtCanvas.height = fieldInfo.height;
+  drawModelContext(virtCtx);
+  modelDrawing = contextImageToBoolArr(virtCtx);
+}
+/*
+for (var x = 0; x < fieldInfo.width; x++) {
+  let line = [];
+  for (var y = 0; y < fieldInfo.width; y++) {
+    line.push(x < 2 * fieldInfo.shotRadius);
+  }
+  modelDrawing.push(line);
+}
+*/
+
+function draw() {
+  clear();
+
+  if (game.state === 10) { // Menu
+    drawMenu();
+  } else if (game.state === 20) { // In Game
+    drawModel();
+    drawCrosshair();
+    drawShots();
+  } else if (game.state === 30) { // Results
+    drawResults();
+  } else throw "err";
+}
+
+function drawMenu() {
+  ctx.font = "50px Hack";
+  ctx.strokeText("Hello World", 30, 160);
+}
+
+function drawCrosshair() {
+  // crosshair circle
+  drawCircle({
+      x: (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+      y: (fieldInfo.height - 2*fieldInfo.radius)*gg/100},
+    fieldInfo.radius);
+
+  // crosshair stroke horizontal
+  drawLine({
+      x: (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+      y: fieldInfo.radius + (fieldInfo.height - 2*fieldInfo.radius)*gg/100
+    }, {
+      x: 2*fieldInfo.radius + (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+      y: fieldInfo.radius + (fieldInfo.height - 2*fieldInfo.radius)*gg/100
+  });
+
+  // crosshair stroke vertical
+  drawLine({
+      x: fieldInfo.radius + (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+      y: (fieldInfo.height - 2*fieldInfo.radius)*gg/100
+    }, {
+      x: fieldInfo.radius + (fieldInfo.width - 2*fieldInfo.radius)*gb/100,
+      y: 2*fieldInfo.radius + (fieldInfo.height - 2*fieldInfo.radius)*gg/100
+  });
+}
+
+function drawShots() {
+  // shots
+  for (let i = 0; i < game.shots.length; i++) {
+    drawFilledCircle({
+      x: game.shots[i].x,
+      y: game.shots[i].y
+    }, fieldInfo.shotRadius);
+  }
+}
+
+var finalDrawing;
+function drawResults() {
+  let resultsData = new Uint8ClampedArray(4 * fieldInfo.width * fieldInfo.height);
+
+  function addPixel(idx, r, g, b) {
+    resultsData[idx] = r;
+    resultsData[idx+1] = g;
+    resultsData[idx+2] = b;
+    resultsData[idx+3] = 255;
+  }
+
+  let correct = 0;
+  for (var x = 0; x < fieldInfo.width; x++) {
+    for (var y = 0; y < fieldInfo.height; y++) {
+      if (modelDrawing[x][y]) {
+        if (finalDrawing[x][y]) { // both have the pixel
+          correct++;
+          addPixel(4*(fieldInfo.width*x+y), 23, 142, 21); // dark green
+        } else { // model has pixel, but user drawing hasnt
+          addPixel(4*(fieldInfo.width*x+y), 188, 0, 3); // dark red
+        }
+      } else {
+        if(finalDrawing[x][y]) { // model has no pixel, but user drawing hasnt
+          addPixel(4*(fieldInfo.width*x+y), 239, 58, 31); // light red
+        } else { // both havn't
+          correct++;
+          addPixel(4*(fieldInfo.width*x+y), 130, 244, 58); // light green
+        }
+      }
+    }
+  }
+
+  let id = new ImageData(resultsData, fieldInfo.width, fieldInfo.height);
+  ctx.putImageData(id, 0, 0);
+
+  ctx.strokeText("Score: " + Math.floor(correct/fieldInfo.width/fieldInfo.height*100) + "%", 50, 150);
+}
+
+var draw_int = setInterval(draw, 50)
+</script>
+
+</body>
+</html>
+
