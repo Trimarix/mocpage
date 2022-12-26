@@ -9,6 +9,18 @@ Your browser does not support the HTML canvas tag.</canvas>
 <button onClick="startGame();">start</button>
 <button onClick="endGame();">end</button>
 
+<div>
+  <div><span>alpha: </span><span class="alpha"></span></div>
+  <div><span>beta: </span><span class="beta"></span></div>
+  <div><span>gamma: </span><span class="gamma"></span></div>
+</div>
+
+<div>
+  <div><span>alpha: </span><span class="alpha-x"></span></div>
+  <div><span>beta: </span><span class="beta-x"></span></div>
+  <div><span>gamma: </span><span class="gamma-x"></span></div>
+</div>
+
 <script>
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -71,9 +83,16 @@ function handleOrientation(event) {
   gamma = gamma < -30 ? -30 : gamma;
   gamma = gamma > 30 ? 30 : gamma;
 
+  $(".alpha").html(alpha)
+  $(".beta").html(beta)
+  $(".gamma").html(gamma)
+
   gb = (beta + 30)/60*100;
   gg = (gamma + 30)/60*100;
-};
+
+  $(".beta-x").html(gb)
+  $(".gamma-x").html(gg)
+}
 
 window.addEventListener('deviceorientation', handleOrientation);
 
